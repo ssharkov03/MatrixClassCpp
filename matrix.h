@@ -21,6 +21,7 @@ class Matrix
         // Configuration methods
         void SetToIdentity();
         void SetToZero();
+        void MatrixByMod(int mod);
 
         // Element access methods
         T GetElement(int row, int col);
@@ -46,6 +47,7 @@ class Matrix
 
         // Overload = operator
         Matrix<T>& operator=(const Matrix& matrix);
+
 
         // Overload [] operator
         const T* operator[](int i) const;
@@ -190,6 +192,14 @@ Matrix<T> Matrix<T>::Transpose() {
     }
     return transposed_matrix;
 }
+
+template<class T>
+void Matrix<T>::MatrixByMod(int mod) {
+    for (int i = 0; i < m_nElements; ++i){
+        m_matrixData[i] = (mod + (m_matrixData[i] % mod)) % mod;
+    }
+}
+
 
 template<class T>
 double Matrix<T>::Determinant() {
@@ -523,6 +533,10 @@ Matrix<T> & Matrix<T>::operator=(const Matrix<T> &matrix) {
     return *this;
 }
 
+/*************************************************************************************
+Multiplication by mod
+*************************************************************************************/
+
 
 /*************************************************************************************
 THE [] OPERATOR
@@ -595,18 +609,3 @@ void Matrix<T>::BoundsCheck(int i, int j) const {
         throw std::out_of_range("Can not access out of bound element!");
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

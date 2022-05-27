@@ -14,6 +14,7 @@ class Hamming : public Matrix<int>{
 
         Matrix<int> ParityCheckMatrix();
         Matrix<int> GeneratorMatrix();
+        Matrix<int> decode(const Matrix<int>& codeWordWithMistake);
 
     private:
 
@@ -22,6 +23,10 @@ class Hamming : public Matrix<int>{
         static bool isVectorCollinearToColumn(const Matrix<int>& vector, Matrix<int> matrix, int idx, int mod);
         static bool isCollinear(const Matrix<int>& vector1, const Matrix<int>& vector2, int vectorLen, int mod);
         static bool isCoefficientValid(int vector1_coord, int vector2_coord, double coefficient, bool coefficientWasMadeOfDiv_El2_On_El1, int mod);
+        Matrix<int> findSyndrome(const Matrix<int>& parityCheckMatrix, Matrix<int> vector) const;
+        static bool isSyndromeZeroColumn(Matrix<int> syndrome);
+        static int findIdxWithMistake(Matrix<int> parityCheckMatrix, const Matrix<int>& syndrome);
+        Matrix<int> findCodeWordWithoutMistakes(const Matrix<int>& parityCheckMatrix, const Matrix<int>& codeWordWithMistake);
 
     private:
         int P, R, N;
@@ -100,7 +105,7 @@ Hamming::Hamming(int p, int r) {
 }
 
 /*************************************************************************************
-                            FUNCTIONS TO GET MATRICES
+                            PUBLIC FUNCTIONS
 *************************************************************************************/
 
 Matrix<int> Hamming::ParityCheckMatrix() {
@@ -111,6 +116,22 @@ Matrix<int> Hamming::ParityCheckMatrix() {
 Matrix<int> Hamming::GeneratorMatrix() {
     return h_GeneratorMatrix;
 }
+
+Matrix<int> Hamming::decode(const Matrix<int>& codeWordWithMistake) {
+
+    Matrix<int> codeWordWithoutMistake;
+    codeWordWithoutMistake = findCodeWordWithoutMistakes(h_ParityCheckMatrix, codeWordWithMistake);
+
+    // first n-r coords of correct coords are coords of decoded code word because generator matrix G has E(n-k*n-k) at beginning
+    // and codeWord = decodedCodeWord * G
+
+    Matrix<int> decodedCodeWord(1, N-R);
+    for (int i = 0; i < N - R; ++i){
+        decodedCodeWord.SetElement(0, i, codeWordWithoutMistake[0][i]);
+    }
+    return decodedCodeWord;
+}
+
 
 /*************************************************************************************
                             PRIVATE FUNCTIONS
@@ -199,4 +220,76 @@ bool Hamming::isCoefficientValid(int vector1_coord, int vector2_coord, double co
             return true;
         return false;
     }
+}
+
+
+
+Matrix<int> Hamming::findSyndrome(const Matrix<int>& parityCheckMatrix, Matrix<int> vector) const {
+    Matrix<int> transposed_vector, syndrome;
+    transposed_vector = vector.Transpose();
+    syndrome = (parityCheckMatrix * transposed_vector);
+    syndrome.MatrixByMod(P);
+    return syndrome;
+}
+
+bool Hamming::isSyndromeZeroColumn(Matrix<int> syndrome) {
+
+    // nRows = r, nCols = 1
+    int nRows = syndrome.GetNumRows();
+    for (int i = 0; i < nRows; ++i){
+        if (syndrome[i][0] != 0){
+            return false;
+        }
+    }
+    return true;
+}
+
+
+
+int Hamming::findIdxWithMistake(Matrix<int> parityCheckMatrix, const Matrix<int>& syndrome) {
+
+    // syndrome is a column in parity check matrix, here its idx is found -> mistake in idx coord of code word y(vector)
+
+    int nCols = parityCheckMatrix.GetNumCols();
+    int nRows = parityCheckMatrix.GetNumRows();
+
+    for (int columnIdx = 0; columnIdx < nCols; ++columnIdx){
+        bool isColumnEqToSyndrome = true;
+
+        for (int rowIdx = 0; rowIdx < nRows; ++rowIdx){
+            if (syndrome[rowIdx][0] != parityCheckMatrix[rowIdx][columnIdx]){
+                isColumnEqToSyndrome = false;
+                break;
+            }
+        }
+        if (isColumnEqToSyndrome) {
+            return columnIdx;
+        }
+    }
+    return -1;
+}
+
+Matrix<int> Hamming::findCodeWordWithoutMistakes(const Matrix<int>& parityCheckMatrix, const Matrix<int>& codeWordWithMistake) {
+
+    Matrix<int> syndrome;
+    syndrome = findSyndrome(parityCheckMatrix, codeWordWithMistake);
+    if (isSyndromeZeroColumn(syndrome)){
+        return codeWordWithMistake;
+    }
+
+    int mistakeIdx = findIdxWithMistake(parityCheckMatrix, syndrome), mistakeIdxCoordValue = -1;
+    Matrix<int> codeWordWithoutMistake;
+    codeWordWithoutMistake = codeWordWithMistake;
+    codeWordWithoutMistake.SetElement(0, mistakeIdx, mistakeIdxCoordValue);  // mistake idx search start (from 0)
+
+
+    do{
+        ++mistakeIdxCoordValue;
+        codeWordWithoutMistake.SetElement(0, mistakeIdx, mistakeIdxCoordValue);
+        syndrome = findSyndrome(parityCheckMatrix, codeWordWithoutMistake);
+    }
+    while (!isSyndromeZeroColumn(syndrome));
+
+    // syndrome = 0 => codeWordWithoutMistake is correct now;
+    return codeWordWithoutMistake;
 }

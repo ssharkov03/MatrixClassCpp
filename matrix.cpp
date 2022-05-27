@@ -1,6 +1,18 @@
 #include <iostream>
 #include "matrix.h"
 
+
+//Matrix<int> byModMultiplication(const Matrix<int>& matrix, const Matrix<int>& matrix1, int mod){
+//    Matrix<int> result;
+//    result = matrix * matrix1;
+//    for (int i = 0; i < result.GetNumRows(); ++i){
+//        for (int j = 0; j < result.GetNumCols(); ++j){
+//            result.SetElement(i, j, result[i][j] % mod);
+//        }
+//    }
+//    return result;
+//}
+
 using namespace std;
 int main(){
 
@@ -127,6 +139,16 @@ int main(){
     matrixForDeterminant.PrintMatrix();
     cout << "Matrix[1][1] =  " << matrixForDeterminant[1][1] << endl;
 
-
+    cout << endl << "**************" << endl;
+    int A_data[6] = {1, 2, 3, 0, 1, 2};
+    Matrix<int> A(2, 3, A_data);
+    int B_data[6] = {1, 0, 1};
+    Matrix<int> B(3, 1, B_data);
+    Matrix<int> res = A * B;
+    res.PrintMatrix();
+    cout << endl << "**************" << endl;
+    res.MatrixByMod(3);
+    res.PrintMatrix();
     return 0;
 }
+
